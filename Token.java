@@ -9,13 +9,15 @@ public class Token implements IToken {
     final int pos;
     final int length;
     final String value;
-
-    public Token(Kind kind, int pos, int length, String value) {
+    final SourceLocation location;
+    
+    public Token(Kind kind, int pos, int length, String value, SourceLocation location) {
 
         this.kind = kind;
         this.pos = pos;
         this.length = length;
         this.value = value;
+        this.location = location;
     }
 
     @Override public Kind getKind() {
@@ -23,20 +25,30 @@ public class Token implements IToken {
     }
 
     @Override public int getIntValue() {
+        try {
         if(this.kind == Kind.INT_LIT)
             return Integer.parseInt(this.value);
         else {
             System.out.print("Not Kind.INT_LIT");
             return -1; //fix this return
         }
+        }catch(Exception e) {
+            System.out.print("Throw error int"); // needs change
+            return -1;
+        }
     }
     
     @Override public float getFloatValue() {
+        try {
         if(this.kind == Kind.FLOAT_LIT)
             return Float.parseFloat(this.value);
         else {
             System.out.print("Not Kind.Float_Lit");
             return -1.f; //fix this return
+        }
+        }catch(Exception e) {
+            System.out.print("throw error float"); // needs change
+            return -1.f;
         }
     }
     
@@ -51,16 +63,14 @@ public class Token implements IToken {
     
     //not done yet
     @Override public SourceLocation getSourceLocation() {
-        SourceLocation sl = new SourceLocation(pos, length);
         
-        return sl;
+        return this.location;
     }
 
     @Override public String getText() {
         if(this.kind == Kind.STRING_LIT) {
-            String raw = this.value;
             
-            return (this.value);
+            return this.value;
         }
         else {
             System.out.print("Not Kind.String_Lit");
@@ -77,9 +87,10 @@ public class Token implements IToken {
                 }
                 else if(i+1 < this.value.length()) {
                     switch(this.value.charAt(i+1)) {
-                    case 't' -> val+= '\t';
-                    case 'r' -> val+= '\r';
-                    case 'n' -> val+= '\r';
+                    case 't' -> {val+= '\t';}
+                    case 'r' -> {val+= '\r';}
+                    case 'n' -> {val+= '\n';}
+                    case 'f' -> {val+= '\f';}
                     }
                 }
                 //else throw error
