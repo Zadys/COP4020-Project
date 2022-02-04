@@ -23,6 +23,7 @@ public class Lexer implements ILexer {
 		HAS_MINUS,
 		IN_STR,
 		ESC_SEQ,
+		COMMENT
 	}
 	
 	
@@ -57,9 +58,8 @@ public class Lexer implements ILexer {
 	            case START -> {
 	            	
 	                startPos = pos;
-	                //System.out.printf("\nDetected new token at %d\n", startPos);
 	                location = new IToken.SourceLocation(line, column);
-	                System.out.printf("\nLooking at %d\n", startPos);
+
 	                switch(c) {
 	                	case ' ', '\t' -> {break;} //skip whitespace
 	                    case '&' -> tokens.add(new Token(Token.Kind.AND, startPos, 1, "&", location));
@@ -79,11 +79,13 @@ public class Lexer implements ILexer {
 	                    case '+' -> tokens.add(new Token(Token.Kind.PLUS, startPos, 1, "+", location));
 	                    case '^' -> tokens.add(new Token(Token.Kind.RETURN, startPos, 1, "^", location));
 	                    case ';' -> tokens.add(new Token(Token.Kind.SEMI, startPos, 1, ";", location));
-	                    case '*' -> tokens.add(new Token(Token.Kind.TIMES, startPos, 1, "*", location));          
+	                    case '*' -> tokens.add(new Token(Token.Kind.TIMES, startPos, 1, "*", location));
+	                    case '#' -> state = State.COMMENT;
 	                    case '\n', '\r'-> {
 	                    	line++;
 	                    	column = -1;
 	                    }
+	                    //default -> throw new LexicalException("\nInvalid Character\n");
 	                }
 	                
 	                if(Character.isJavaIdentifierStart(c)) { 
@@ -123,8 +125,8 @@ public class Lexer implements ILexer {
 	            	//System.out.print("\nEntered IN_NUM\n");
 	            	
 	            	if(Character.isDigit(c) && !isZero){
-	            		column++;
 	            	    pos++;
+	            	    column++;
 	            	}
 	            	else if (c == '.') {
 	            	    state = State.HAS_DOT;
@@ -151,8 +153,10 @@ public class Lexer implements ILexer {
 	            case IN_FLOAT -> {
 
 	            	
-	            	if(Character.isDigit(c))
+	            	if(Character.isDigit(c)) {
 	            		pos++;
+	            		column++;
+	            	}
 	            	else {
 	            		tokens.add(new Token(Token.Kind.FLOAT_LIT, startPos, length, value, location));
 	            	
@@ -164,6 +168,7 @@ public class Lexer implements ILexer {
 	            	if(c == '=') {
 	            		tokens.add(new Token(Token.Kind.EQUALS, startPos, 2, "==", location));
 	            		pos++;
+	            		column++;
 	            	}
 	            	else 
 	            		tokens.add(new Token(Token.Kind.ASSIGN, startPos, 1, "=", location));
@@ -174,6 +179,7 @@ public class Lexer implements ILexer {
 	            	if(c == '=') {
 	            		tokens.add(new Token(Token.Kind.NOT_EQUALS, startPos, 2, "!=", location));
 	            		pos++;
+	            		column++;
 	            	}
 	            	else 
 	            		tokens.add(new Token(Token.Kind.BANG, startPos, 1, "!", location));
@@ -185,10 +191,12 @@ public class Lexer implements ILexer {
 		            	case '=' -> {
 		            		tokens.add(new Token(Token.Kind.GE, startPos, 2, ">=", location));
 		            		pos++;
+		            		column++;
 		            	}
 		            	case '>' -> {
 		            		tokens.add(new Token(Token.Kind.RANGLE, startPos, 2, ">>", location));
 		            		pos++;
+		            		column++;
 		            	}
 		            	default -> tokens.add(new Token(Token.Kind.GT, startPos, 1, ">", location));
 	            	}
@@ -200,14 +208,17 @@ public class Lexer implements ILexer {
 		            	case '=' -> {
 		            		tokens.add(new Token(Token.Kind.LE, startPos, 2, "<=", location));
 		            		pos++;
+		            		column++;
 		            	}
 		            	case '<' -> {
 		            		tokens.add(new Token(Token.Kind.LANGLE, startPos, 2, "<<", location));
 		            		pos++;
+		            		column++;
 		            	}
 		            	case '-' -> {
 		            		tokens.add(new Token(Token.Kind.LARROW, startPos, 2, "<-", location));
 		            		pos++;
+		            		column++;
 		            	}
 		            	default -> tokens.add(new Token(Token.Kind.LT, startPos, 1, "<", location));
 	            	}
@@ -218,6 +229,7 @@ public class Lexer implements ILexer {
 	            	if(c == '>') {
 	            		tokens.add(new Token(Token.Kind.RARROW, startPos, 2, "->", location));
 	            		pos++;
+	            		column++;
 	            	}
 	            	else
 	            		tokens.add(new Token(Token.Kind.MINUS, startPos, 1, "-", location));
@@ -230,21 +242,30 @@ public class Lexer implements ILexer {
 		            		tokens.add(new Token(Token.Kind.STRING_LIT, startPos, length-1, input.substring(startPos+1, pos), location));
 		            		state = State.START;
 		            		pos++;
+		            		column++;
 		            	}
 		            	case '\\' -> {
 		            		state = State.ESC_SEQ;
 		            		pos++;
+		            		column++;
 		            	}
 		            	default -> pos++;
 	            	}
 	            }
 	            case ESC_SEQ -> {
-	            	
 	            	pos++;
-	            	
+	            	column++;
 	            	state = State.IN_STR;
 	            }
-	           default -> System.out.print("\nError\n");
+	            case COMMENT -> {
+	            	switch(c) {
+	            	case '\n'-> {
+	            			state = State.START;
+	            			pos++;
+	            		}
+	            	}
+	            }
+	            default -> System.out.print("\nError\n");
 	
 	        }
 		}
@@ -298,7 +319,6 @@ public class Lexer implements ILexer {
 	
 	@Override public IToken next() throws LexicalException {
 			return tokens.poll();
-		
 	}
 	@Override public IToken peek() throws LexicalException {
 		

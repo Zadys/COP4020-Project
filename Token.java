@@ -9,15 +9,15 @@ public class Token implements IToken {
     final int pos;
     final int length;
     final String value;
-    final SourceLocation location;
+    final SourceLocation sl;
     
-    public Token(Kind kind, int pos, int length, String value, SourceLocation location) {
+    public Token(Kind kind, int pos, int length, String value, SourceLocation sl) {
 
         this.kind = kind;
         this.pos = pos;
         this.length = length;
         this.value = value;
-        this.location = location;
+        this.sl = sl;
     }
 
     @Override public Kind getKind() {
@@ -63,13 +63,11 @@ public class Token implements IToken {
     
     //not done yet
     @Override public SourceLocation getSourceLocation() {
-        
-        return this.location;
+        return this.sl;
     }
 
     @Override public String getText() {
         if(this.kind == Kind.STRING_LIT) {
-            
             return this.value;
         }
         else {
@@ -81,7 +79,7 @@ public class Token implements IToken {
     @Override public String getStringValue() {
         if(this.kind == Kind.STRING_LIT) {
             String val = "";
-            for(int i = 0; i < this.value.length(); i++) {
+            for(int i = 1; i < this.value.length()-1; i++) {
                 if(this.value.charAt(i) != '\\') {
                     val += this.value.charAt(i);
                 }
@@ -91,7 +89,11 @@ public class Token implements IToken {
                     case 'r' -> {val+= '\r';}
                     case 'n' -> {val+= '\n';}
                     case 'f' -> {val+= '\f';}
+                    case 'b' -> {val+= '\b';}
+                    case '\"'-> {val+= '\"';}
+                    case '\''-> {val+= '\'';}
                     }
+                    i++;
                 }
                 //else throw error
             }
